@@ -13,6 +13,7 @@
 - [GNU Make](https://www.gnu.org/software/make/)
 
 Вы можете проверить, установлены ли эти программы с помощью команд:
+
 ```shell
 $ git --help
 usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
@@ -62,7 +63,7 @@ IDE для корректной работы подсказок необходи
 Установите [uv](https://docs.astral.sh/uv/) и в корне репозитория выполните команду
 
 ```shell
-$ uv sync
+uv sync
 ```
 
 [uv](https://docs.astral.sh/uv/) создаст виртуальное окружение, установит необходимую версию Python и все необходимые зависимости.
@@ -70,8 +71,8 @@ $ uv sync
 После этого активируйте виртуальное окружение в текущей сессии терминала:
 
 ```shell
-$ source .venv/bin/activate  # для Linux
-$ .\.venv\Scripts\activate  # Для Windows
+source .venv/bin/activate  # для Linux
+.\.venv\Scripts\activate  # Для Windows
 ```
 
 ## Как вести разработку
@@ -81,10 +82,10 @@ $ .\.venv\Scripts\activate  # Для Windows
 Находясь в корневой директории проекта, запустить проект можно командой:
 
 ```shell
-$ fastapi dev src/main.py
+fastapi dev src/main.py
 ```
 
-Проект будет работать по адресу http://127.0.0.1:8000/
+Проект будет работать по адресу <http://127.0.0.1:8000/>
 
 ### Как установить python-пакет в виртуальное окружение
 
@@ -93,7 +94,7 @@ $ fastapi dev src/main.py
 Вот пример как добавить в зависимости библиотеку `beautifulsoup4`.
 
 ```shell
-$ uv add beautifulsoup4
+uv add beautifulsoup4
 ```
 
 Конфигурационные файлы `pyproject.toml` и `uv.lock` обновятся автоматически.
@@ -101,13 +102,13 @@ $ uv add beautifulsoup4
 Аналогичным образом можно удалять python-пакеты:
 
 ```shell
-$ uv remove beautifulsoup4
+uv remove beautifulsoup4
 ```
 
 Если необходимо обновить `uv.lock` вручную, то используйте команду:
 
 ```shell
-$ uv lock
+uv lock
 ```
 
 ### Команды для быстрого запуска с помощью make
@@ -120,4 +121,10 @@ Cписок доступных команд:
 lint                      Проверяет линтерами код в репозитории
 format                    Автоматически исправляет форматирование кода -- порядок импортов, лишние пробелы и т.д.
 help                      Отображает список доступных команд и их описания
+```
+
+### Проверка линтером `ruff`
+
+```shell
+ruff check . --fix
 ```
