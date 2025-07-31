@@ -19,8 +19,8 @@ STATIC_FILES_DIR = PathLib(__file__).parent / "static"
 
 app = FastAPI(title="FastAI App", version="1.0.0")
 
-# === PYDANTIC МОДЕЛИ ДАННЫХ ===
 
+# === PYDANTIC МОДЕЛИ ДАННЫХ ===
 
 class UserResponse(BaseModel):
     email: str
@@ -78,6 +78,7 @@ class SiteListResponse(BaseModel):
 
 
 # === Мок-данные ===
+
 MOCK_SITE = SiteResponse(
     site_id=1,
     title="Сайт про стегозавров",
@@ -89,20 +90,21 @@ MOCK_SITE = SiteResponse(
     html_preview=MOCK_HTML[:200] + "..." if len(MOCK_HTML) > 200 else MOCK_HTML,
 )
 
+
 MOCK_SITES_LIST = [MOCK_SITE, MOCK_SITE, MOCK_SITE]
 
 
 # === Генератор чанков для стриминга ===
+
 async def generate_html_chunks():
     """Асинхронный генератор, имитирующий постепенную генерацию HTML"""
-    for i in range(0, len(MOCK_HTML), 100):  # разбиваем на чанки по 100 символов
+    for i in range(0, len(MOCK_HTML), 100):
         chunk = MOCK_HTML[i : i + 100]
         yield chunk
-        await asyncio.sleep(0.1)  # имитация задержки генерации
+        await asyncio.sleep(0.1)
 
 
 # === ЭНДПОИНТЫ ===
-
 
 # 1. GET: /users/me
 @app.get(
@@ -182,7 +184,7 @@ async def mock_create_site(request: SiteCreateRequest):
     return SiteCreateResponse(site_id=1, title=request.title, status="created")
 
 
-# 5. GET: /sites/my
+# 3. GET: /sites/my
 @app.get(
     "/sites/my",
     response_model=SiteListResponse,
@@ -211,7 +213,7 @@ async def mock_get_site(site_id: int = Path(..., description="ID сайта", ex
     return MOCK_SITE
 
 
-# 3. POST: /sites/{site_id}/generate
+# 4. POST: /sites/{site_id}/generate
 @app.post(
     "/sites/{site_id}/generate",
     summary="Сгенерировать HTML-контент сайта",
@@ -225,7 +227,7 @@ async def mock_get_site(site_id: int = Path(..., description="ID сайта", ex
 async def mock_generate_site_html(site_id: int = Path(..., description="ID сайта", example=1)):
     """
     Сгенерировать HTML-контент сайта.
-    curl -X 'POST' -N http://127.0.0.1:8000/sites/1/generate
+    Проверка: curl -X 'POST' -N http://127.0.0.1:8000/sites/1/generate
     """
     if site_id != 1:
         raise HTTPException(status_code=404, detail="Site not found")
