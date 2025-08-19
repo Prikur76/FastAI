@@ -26,8 +26,8 @@ class UserResponse(BaseModel):
     email: str
     is_active: bool
     profile_id: str
-    registered_at: str
-    updated_at: str
+    registered_at: datetime
+    updated_at: datetime
     username: str
 
     model_config = ConfigDict(
@@ -45,22 +45,39 @@ class UserResponse(BaseModel):
 
 
 class SiteCreateRequest(BaseModel):
-    title: Annotated[
-        str, Field(description="Название сайта", examples=["Мой блог", "Сайт про стегозавров", "Лендинг продукта"])
-    ] = "Новый сайт"
-    description: str | None = Field(default=None, description="Описание сайта", examples=["Сайт о стегозаврах"])
+    title: str = Field(default="Новый сайт", examples=["Фан клуб Домино"])
+    prompt: str = Field(default="", examples=["Сайт любителей играть в домино"])
 
     model_config = ConfigDict(
-        json_schema_extra={"example": {"title": "Новый сайт", "description": "Сайт про стегозавров"}}
+        json_schema_extra={"example": { "title": "Фан клуб Домино", "prompt": "Сайт любителей играть в домино"}}
     )
 
 
 class SiteCreateResponse(BaseModel):
-    site_id: Annotated[int, Field(description="Уникальный идентификатор сайта", examples=[1])]
-    title: str
+    id: int = Field(..., examples=[1])
+    site_id: int = Field(..., examples=[1])  # дублирование для совместимости, можно убрать одно
+    title: str = Field(..., examples=["Фан клуб Домино"])
+    prompt: str = Field(..., examples=["Сайт любителей играть в домино"])
+    html_code_url: str = Field(..., examples=["http://example.com/media/index.html"])
+    html_code_download_url: str = Field(..., examples=["http://example.com/media/index.html?response-content-disposition=attachment"])
+    screenshot_url: str = Field(..., examples=["http://example.com/media/index.png"])
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    status: str = Field(default="created", examples=["created", "generating", "ready"])
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "title": "Фан клуб Домино",
+                "prompt": "Сайт любителей играть в домино",
+                "html_code_url": "http://example.com/media/index.html",
+                "html_code_download_url": "http://example.com/media/index.html?response-content-disposition=attachment",
+                "screenshot_url": "http://example.com/media/index.png",
+                "created_at": "2025-06-15T18:29:56+00:00",
+                "updated_at": "2025-06-15T18:29:56+00:00",
+            }
+        }
+    )
 
 class SiteResponse(BaseModel):
     site_id: int
@@ -147,11 +164,24 @@ def mock_get_current_user() -> JSONResponse:
     return JSONResponse(content=mock_user_data, status_code=200)
 
 
-# 2. POST: /sites/create
+# 2. GET: /sites/my
+@app.get(
+    "/sites/my",
+    response_model=SiteListResponse,
+    summary="Получить список сгенерированных сайтов текущего пользователя",
+    response_description="Список созданных пользователем сайтов",
+    tags=["Sites"],
+    responses={200: {"description": "Список сайтов пользователя"}},
+)
+async def mock_get_user_sites():
+    return {"sites": MOCK_SITES_LIST}
+
+
+# 3. POST: /sites/create
 @app.post(
     "/sites/create",
     response_model=SiteCreateResponse,
-    summary="Создать новый сайт",
+    summary="Создать сайт",
     response_description="Возвращает информацию о созданном сайте",
     tags=["Sites"],
     responses={
@@ -160,10 +190,15 @@ def mock_get_current_user() -> JSONResponse:
             "content": {
                 "application/json": {
                     "example": {
+                        "id": 1,
                         "site_id": 1,
-                        "title": "Новый сайт",
+                        "title": "Фан клуб Домино",
+                        "prompt": "Сайт любителей играть в домино",
                         "created_at": "2025-06-15T18:29:56+00:00",
-                        "status": "created",
+                        "updated_at": "2025-06-15T18:29:56+00:00",
+                        "html_code_url": "http://example.com/media/index.html",
+                        "html_code_download_url": "http://example.com/media/index.html?response-content-disposition=attachment",
+                        "screenshot_url": "http://example.com/media/index.png"
                     }
                 }
             },
@@ -173,7 +208,13 @@ def mock_get_current_user() -> JSONResponse:
             "content": {
                 "application/json": {
                     "example": {
-                        "detail": [{"loc": ["body", "name"], "msg": "field required", "type": "value_error.missing"}]
+                        "detail": [
+                            {
+                                "loc": ["body", "title"],
+                                "msg": "field required",
+                                "type": "missing"
+                            }
+                        ]
                     }
                 }
             },
@@ -181,36 +222,17 @@ def mock_get_current_user() -> JSONResponse:
     },
 )
 async def mock_create_site(request: SiteCreateRequest):
-    return SiteCreateResponse(site_id=1, title=request.title, status="created")
-
-
-# 3. GET: /sites/my
-@app.get(
-    "/sites/my",
-    response_model=SiteListResponse,
-    summary="Получить список сайтов пользователя",
-    response_description="Список созданных пользователем сайтов",
-    tags=["Sites"],
-    responses={200: {"description": "Список сайтов пользователя"}},
-)
-async def mock_get_user_sites():
-    return {"sites": MOCK_SITES_LIST}
-
-
-# 4. GET: /sites/{site_id}
-@app.get(
-    "/sites/{site_id}",
-    response_model=SiteResponse,
-    summary="Получить информацию о сайте",
-    response_description="Детальная информация о сайте",
-    tags=["Sites"],
-    responses={200: {"description": "Информация о сайте"}, 404: {"description": "Site not found"}},
-)
-async def mock_get_site(site_id: int = Path(..., description="ID сайта", example=1)):
-    if site_id != 1:
-        raise HTTPException(status_code=404, detail="Site not found")
-
-    return MOCK_SITE
+    return SiteCreateResponse(
+        id=1,
+        site_id=1,
+        title=request.title,
+        prompt=request.prompt,
+        created_at=datetime(2025, 6, 15, 18, 29, 56, tzinfo=timezone.utc),
+        updated_at=datetime(2025, 6, 15, 18, 29, 56, tzinfo=timezone.utc),
+        html_code_url="http://example.com/media/index.html",
+        html_code_download_url="http://example.com/media/index.html?response-content-disposition=attachment",
+        screenshot_url="http://example.com/media/index.png"
+    )
 
 
 # 4. POST: /sites/{site_id}/generate
@@ -233,6 +255,22 @@ async def mock_generate_site_html(site_id: int = Path(..., description="ID са�
         raise HTTPException(status_code=404, detail="Site not found")
 
     return StreamingResponse(generate_html_chunks(), media_type="text/html")
+
+
+# 5. GET: /sites/{site_id}
+@app.get(
+    "/sites/{site_id}",
+    response_model=SiteResponse,
+    summary="Получить информацию о сайте",
+    response_description="Детальная информация о сайте",
+    tags=["Sites"],
+    responses={200: {"description": "Информация о сайте"}, 404: {"description": "Site not found"}},
+)
+async def mock_get_site(site_id: int = Path(..., description="ID сайта", example=1)):
+    if site_id != 1:
+        raise HTTPException(status_code=404, detail="Site not found")
+
+    return MOCK_SITE
 
 
 app.mount(
